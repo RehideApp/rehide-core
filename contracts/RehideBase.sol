@@ -19,7 +19,6 @@ abstract contract RehideBase is ERC721Enumerable, ERC721URIStorage, Pausable, Ow
      * @dev Payment
      */
     address payable public _platformWallet = payable(0x418DeE19Bc3659bd6eFc5f990461320cDfedd91E);
-    uint256 public _minEthMintPrice = 0; //1000000000000000; // wei = 0.001 ETH
     uint256 public _readPlatformPercentage = 5;
 
     /**
@@ -49,11 +48,6 @@ abstract contract RehideBase is ERC721Enumerable, ERC721URIStorage, Pausable, Ow
         require(platformWallet != address(0), "RehideNFT: Address cannot be the zero address");
         _platformWallet = platformWallet;
         emit SetPlatformWallet(_platformWallet);
-    }
-
-    function setMinEthMintPrice(uint256 minEthMintPrice) external onlyOwner {
-        _minEthMintPrice = minEthMintPrice;
-        emit SetMinEthMintPrice(_minEthMintPrice);
     }
     
     function setPrimaryReferrerPercentage(uint256 primaryReferrerPercentage) external onlyOwner {

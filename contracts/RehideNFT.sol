@@ -146,13 +146,6 @@ contract RehideNFT is IRehideNFT, RehideBase {
         uint256 ttl) 
         public payable whenNotPaused returns (uint256) {
 
-
-        // Enforce min price to non-owner and less than T2+ addresses (index 1) or already minted 1
-        if ((_msgSender() != owner() && _referrerTierList[_msgSender()] < 1)
-            || _tokenIdsForAddress[_msgSender()].length > 0) { 
-            require(msg.value >= _minEthMintPrice, "RehideNFT: Not enough ETH sent");
-        }
-
         if (recipient == address(0)) {
             recipient = _msgSender();
         }
@@ -183,11 +176,6 @@ contract RehideNFT is IRehideNFT, RehideBase {
         address[] memory allowlistAddresses) 
         public payable whenNotPaused returns (uint256) {
 
-        // Enforce min price to non-owner and less than T4+ addresses (index 3)
-        if (_msgSender() != owner() && _referrerTierList[_msgSender()] <= 2) {
-            require(msg.value >= _minEthMintPrice, "RehideNFT: Not enough ETH sent");
-        }
-
         if (recipient == address(0)) {
             recipient = _msgSender();
         }
@@ -214,7 +202,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
         return newTokenId;
     }
 
-    function readSharedNote(uint256 tokenId) public payable returns (uint256 readsAvailable) {
+    function readSharedNote(uint256 tokenId, uint256 platformFee) public payable returns (uint256 readsAvailable) {
         require(_exists(tokenId), "RehideNFT: Token not found");
 
         Note storage note = _notesMapping[tokenId];
@@ -270,16 +258,20 @@ contract RehideNFT is IRehideNFT, RehideBase {
         readsAvailable = note.readsAvailable;
 
         if (readFee > 0) {
-            uint256 platformFee = readFee.mul(_readPlatformPercentage).div(100);
-            _totalPlatformReadFees += platformFee;
-            _platformWallet.transfer(platformFee);
-            emit ReadSharedNoteRewardsTransferred(_platformWallet, tokenId, platformFee);
+
+            if (platformFee > 0) {
+                _totalPlatformReadFees += platformFee;
+                (bool platformTransferSuccess, ) = _platformWallet.call{value: platformFee}("");
+                require(platformTransferSuccess, "RehideNFT: Failed to transfer platform fee");
+                emit ReadSharedNoteRewardsTransferred(_platformWallet, tokenId, platformFee);
+            }
 
             address payable payableCreator = payable(note.creator);
             uint256 creatorFee = readFee - platformFee;
             _creatorReadFees[payableCreator] += creatorFee;
             _totalCreatorsReadFees += creatorFee;
-            payableCreator.transfer(creatorFee);
+            (bool creatorTransferSuccess, ) = payableCreator.call{value: creatorFee}("");
+            require(creatorTransferSuccess, "RehideNFT: Failed to transfer creator fee");
             emit ReadSharedNoteRewardsTransferred(payableCreator, tokenId, creatorFee);
         }
     }
@@ -410,7 +402,8 @@ contract RehideNFT is IRehideNFT, RehideBase {
                             uint256 secondaryReferrerReward = mintFee.mul(_secondaryReferrerPercentage).div(100);
                             totalTxReferrerRewards += secondaryReferrerReward;
                             _referrerRewards[secondaryReferrer] += secondaryReferrerReward;
-                            secondaryReferrer.transfer(secondaryReferrerReward);
+                            (bool secondaryReferrerSent, ) = secondaryReferrer.call{value: secondaryReferrerReward}("");
+                            require(secondaryReferrerSent, "Failed to send Ether");
                             emit RewardsTransferred(secondaryReferrer, secondaryReferrerReward);
                         }
                     }
@@ -427,7 +420,8 @@ contract RehideNFT is IRehideNFT, RehideBase {
                     }
                     totalTxReferrerRewards += primaryReferrerReward;
                     _referrerRewards[primaryReferrer] += primaryReferrerReward;
-                    primaryReferrer.transfer(primaryReferrerReward);
+                    (bool primaryReferrerSent, ) = primaryReferrer.call{value: primaryReferrerReward}("");
+                    require(primaryReferrerSent, "Failed to send Ether");
                     emit RewardsTransferred(primaryReferrer, primaryReferrerReward);
                 }
             }
@@ -437,7 +431,8 @@ contract RehideNFT is IRehideNFT, RehideBase {
 
             uint256 platformTxFee = mintFee - totalTxReferrerRewards;
             _totalPlatformMintFees += platformTxFee;
-            _platformWallet.transfer(platformTxFee);
+            (bool platformWalletSent, ) = _platformWallet.call{value: platformTxFee}("");
+            require(platformWalletSent, "Failed to send Ether");
             emit RewardsTransferred(_platformWallet, platformTxFee);
         }
     }
@@ -464,15 +459,14 @@ contract RehideNFT is IRehideNFT, RehideBase {
         require(_exists(tokenId), "RehideNFT: Package set of nonexistent token");
         require(ownerOf(tokenId) == _msgSender(), "RehideNFT: Trying to set another wallet's token package");
         
-        // Enforce min price to non-owner and less than T4+ addresses (index 3)
-        if (_msgSender() != owner() && _referrerTierList[_msgSender()] <= 2) {
-            require(msg.value >= _minEthMintPrice, "RehideNFT: Not enough ETH sent");
-        }
-        
         setTokenPackage(tokenId, tokenPackage);
 
-        _platformWallet.transfer(msg.value);
-        emit RewardsTransferred(_platformWallet, msg.value);
+        uint256 fee = msg.value;
+        if (fee > 0) {
+            (bool platformWalletSent, ) = _platformWallet.call{value: fee}("");
+            require(platformWalletSent, "Failed to send Ether");
+            emit RewardsTransferred(_platformWallet, fee);
+        }
     }
 
     function updateTokenURI(uint256 tokenId, string memory newUri) external onlyOwner {
