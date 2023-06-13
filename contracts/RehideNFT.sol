@@ -85,8 +85,8 @@ contract RehideNFT is IRehideNFT, RehideBase {
      * @dev Set referral tier
      */
     function setTier(uint256 tierId, uint256 rebate) external onlyOwner {
-        require(tierId > 0, "RehideNFT: Invalid tierId");
-        require(rebate <= _maxReferrerRewardsPercentage, "RehideNFT: Referrer rebate exceed max allowed.");
+        require(tierId > 0, "Invalid tierId");
+        require(rebate <= _maxReferrerRewardsPercentage, "Referrer rebate exceed max allowed.");
 
         // If new tier (could be updating existing)
         if (_tierRebate[tierId] == 0) {
@@ -101,9 +101,9 @@ contract RehideNFT is IRehideNFT, RehideBase {
      * @dev Link referrer and tier
      */
     function addToReferrerTierList(address[] calldata toAddAddresses, uint256 tierId) external onlyOwner {
-        require(toAddAddresses.length > 0, "RehideNFT: No addresses to add");
-        require(tierId >= 0, "RehideNFT: Invalid tierId");
-        require(_tierRebate[tierId] > 0, "RehideNFT: Invalid tier");
+        require(toAddAddresses.length > 0, "Empty");
+        require(tierId >= 0, "Invalid tierId");
+        require(_tierRebate[tierId] > 0, "Invalid tier");
 
         for (uint256 i = 0; i < toAddAddresses.length; i++) {
             if (_referrerTierList[toAddAddresses[i]] == 0) {
@@ -153,7 +153,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
         uint256 newTokenId = doMintNFT(recipient, uri);
         emit MintNFT(newTokenId, uri, recipient, msg.value);
 
-        require(newTokenId > 0, "RehideNFT: Error minting NFT");
+        require(newTokenId > 0, "Error minting");
 
         _tokenIdsForAddress[_msgSender()].push(newTokenId);
 
@@ -183,7 +183,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
         uint256 newTokenId = doMintNFT(recipient, uri);
         emit MintNFT(newTokenId, uri, recipient, msg.value);
 
-        require(newTokenId > 0, "RehideNFT: Error minting NFT");
+        require(newTokenId > 0, "Error minting");
 
         note.creator = _msgSender();
         note.ttl += block.timestamp;
@@ -203,13 +203,13 @@ contract RehideNFT is IRehideNFT, RehideBase {
     }
 
     function readSharedNote(uint256 tokenId, uint256 platformFee) public payable returns (uint256 readsAvailable) {
-        require(_exists(tokenId), "RehideNFT: Token not found");
+        require(_exists(tokenId), "Not found");
 
         Note storage note = _notesMapping[tokenId];
 
         uint256 readFee = msg.value;
         if (_msgSender() != owner() && ownerOf(tokenId) != _msgSender()) {
-            require(readFee >= note.readPrice, "RehideNFT: Not enough ETH sent");
+            require(readFee >= note.readPrice, "Insufficient ETH");
         }
 
         if (note.allowlistOnly > 0) {
@@ -221,7 +221,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
                     break;
                 }
             }
-            require(isAllowed, "RehideNFT: Not on allowlist");
+            require(isAllowed, "Not on allowlist");
         }
 
         // Check denylist
@@ -234,7 +234,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
                     break;
                 }
             }
-            require(isDenied, "RehideNFT: Address is in denylist");
+            require(isDenied, "In denylist");
         }
 
         NoteRead memory noteRead = NoteRead({
@@ -246,8 +246,8 @@ contract RehideNFT is IRehideNFT, RehideBase {
         _addressReadNotes[_msgSender()].push(tokenId);
         emit ReadSharedNote(tokenId, _msgSender(), block.timestamp);
 
-        require(note.readsAvailable > 0, "RehideNFT: Data for token not found (max. reads exceeded)");
-        require(note.ttl > block.timestamp, "RehideNFT: Data for token not found (expired)");
+        require(note.readsAvailable > 0, "Max reads exceeded");
+        require(note.ttl > block.timestamp, "Note expired");
         
         note.readsAvailable -= 1;
         if (note.readsAvailable < 1){
@@ -262,7 +262,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
             if (platformFee > 0) {
                 _totalPlatformReadFees += platformFee;
                 (bool platformTransferSuccess, ) = _platformWallet.call{value: platformFee}("");
-                require(platformTransferSuccess, "RehideNFT: Failed to transfer platform fee");
+                require(platformTransferSuccess, "Failed to transfer platform fee");
                 emit ReadSharedNoteRewardsTransferred(_platformWallet, tokenId, platformFee);
             }
 
@@ -271,7 +271,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
             _creatorReadFees[payableCreator] += creatorFee;
             _totalCreatorsReadFees += creatorFee;
             (bool creatorTransferSuccess, ) = payableCreator.call{value: creatorFee}("");
-            require(creatorTransferSuccess, "RehideNFT: Failed to transfer creator fee");
+            require(creatorTransferSuccess, "Failed to transfer creator fee");
             emit ReadSharedNoteRewardsTransferred(payableCreator, tokenId, creatorFee);
         }
     }
@@ -280,9 +280,9 @@ contract RehideNFT is IRehideNFT, RehideBase {
      * @dev To limit what addresses can read the note
      */
     function addToReadAllowlist(uint256 tokenId, address[] memory toAddAddresses) public {
-        require(_exists(tokenId), "RehideNFT: Allowlist set of nonexistent token");
-        require(ownerOf(tokenId) == _msgSender(), "RehideNFT: Trying to set another wallet's token allowlist");
-        require(toAddAddresses.length > 0, "RehideNFT: No addresses to add");
+        require(_exists(tokenId), "Token not found");
+        require(ownerOf(tokenId) == _msgSender(), "Unauthorised");
+        require(toAddAddresses.length > 0, "Empty");
 
         for (uint256 i = 0; i < toAddAddresses.length; i++) {
             _noteReadAllowlistAddresses[tokenId].push(toAddAddresses[i]); // tokenId => address
@@ -300,9 +300,9 @@ contract RehideNFT is IRehideNFT, RehideBase {
      * If a wallet is on (Allowlist and) Denylist, they can't read it
      */
     function addToReadDenylist(uint256 tokenId, address[] memory toAddAddresses) public {
-        require(_exists(tokenId), "RehideNFT: Denylist set of nonexistent token");
-        require(ownerOf(tokenId) == _msgSender(), "RehideNFT: Trying to set another wallet's token denylist");
-        require(toAddAddresses.length > 0, "RehideNFT: No addresses to add");
+        require(_exists(tokenId), "Token not found");
+        require(ownerOf(tokenId) == _msgSender(), "Unauthorised");
+        require(toAddAddresses.length > 0, "Empty");
 
         for (uint256 i = 0; i < toAddAddresses.length; i++) {
             _noteReadDenylistAddresses[tokenId].push(toAddAddresses[i]); // tokenId => address
@@ -316,7 +316,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
      * @dev Self revoke read permission to a token
      */
     function selfAddToReadDenylist(uint256 tokenId) public {
-        require(_exists(tokenId), "RehideNFT: Denylist set of nonexistent token");
+        require(_exists(tokenId), "Token not found");
 
         _noteReadDenylistAddresses[tokenId].push(_msgSender()); // tokenId => address
         _notesDeniedForAddress[_msgSender()].push(tokenId); // address => tokenId
@@ -327,7 +327,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
      * @dev Spam control - add to user specific blacklist
      */
     function addAddressesToBlacklist(address[] memory toAddAddresses) public {
-        require(toAddAddresses.length > 0, "RehideNFT: No addresses to add");
+        require(toAddAddresses.length > 0, "Empty");
 
         for (uint256 i = 0; i < toAddAddresses.length; i++) {
             _addressBlacklistForAddress[_msgSender()].push(toAddAddresses[i]); // user => spammer
@@ -341,7 +341,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
      * @dev Spam control - add to platform wide blacklist
      */
     function addAddressesToPlatformBlacklist(address[] memory toAddAddresses) external onlyOwner {
-        require(toAddAddresses.length > 0, "RehideNFT: No addresses to add");
+        require(toAddAddresses.length > 0, "Empty");
 
         for (uint256 i = 0; i < toAddAddresses.length; i++) {
             _addressBlacklistForPlatform.push(toAddAddresses[i]); // add spammer address
@@ -351,8 +351,8 @@ contract RehideNFT is IRehideNFT, RehideBase {
     }   
 
     function updateAllowListOnly(uint256 tokenId, uint256 allowListOnly) public {
-        require(_exists(tokenId), "RehideNFT: Setting set of nonexistent token");
-        require(ownerOf(tokenId) == _msgSender(), "RehideNFT: Trying to set another wallet's token setting");
+        require(_exists(tokenId), "Token not found");
+        require(ownerOf(tokenId) == _msgSender(), "Unauthorised");
         
         _notesMapping[tokenId].allowlistOnly = allowListOnly; 
 
@@ -426,7 +426,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
                 }
             }
             uint256 maxReferrerRewards = mintFee.mul(_maxReferrerRewardsPercentage).div(100);
-            require(totalTxReferrerRewards <= maxReferrerRewards, "RehideNFT: Unexpected rewards calculation result");
+            require(totalTxReferrerRewards <= maxReferrerRewards, "Unexpected result");
             _totalReferrerMintRewards += totalTxReferrerRewards;
 
             uint256 platformTxFee = mintFee - totalTxReferrerRewards;
@@ -438,7 +438,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
     }
 
     function setExpireNote(uint256 tokenId) private {
-        require(_exists(tokenId), "RehideNFT: Nonexistent token");
+        require(_exists(tokenId), "Token not found");
         
         Note storage note = _notesMapping[tokenId];
         note.readsAvailable = 0;
@@ -449,15 +449,15 @@ contract RehideNFT is IRehideNFT, RehideBase {
     }
 
     function setTokenPackage(uint256 tokenId, string memory tokenPackage) private {
-        require(_exists(tokenId), "RehideNFT: Package set of nonexistent token");
+        require(_exists(tokenId), "Token not found");
 
         _notesMapping[tokenId].package = tokenPackage;
         emit SetTokenPackage(tokenId, tokenPackage);
     }
 
     function updateTokenPackage(uint256 tokenId, string memory tokenPackage) public payable {
-        require(_exists(tokenId), "RehideNFT: Package set of nonexistent token");
-        require(ownerOf(tokenId) == _msgSender(), "RehideNFT: Trying to set another wallet's token package");
+        require(_exists(tokenId), "Token not found");
+        require(ownerOf(tokenId) == _msgSender(), "Unauthorised");
         
         setTokenPackage(tokenId, tokenPackage);
 
@@ -475,8 +475,8 @@ contract RehideNFT is IRehideNFT, RehideBase {
     }
 
     function burn(uint256 tokenId) external {
-        require(_exists(tokenId), "RehideNFT: Trying to burn nonexistent token");
-        require(ownerOf(tokenId) == _msgSender(), "RehideNFT: Trying to burn another wallet's token");
+        require(_exists(tokenId), "Token not found");
+        require(ownerOf(tokenId) == _msgSender(), "Unauthorised");
         
         setExpireNote(tokenId);
         // setTokenPackage(tokenId, "");
@@ -524,7 +524,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
      * @dev Get addresses that can read a token
      */
     function getNoteReadAllowlist(uint256 tokenId) external view returns (address[] memory addresses) {
-        require(_exists(tokenId), "RehideNFT: Nonexistent token");
+        require(_exists(tokenId), "Token not found");
         addresses = _noteReadAllowlistAddresses[tokenId];
     }
 
@@ -532,9 +532,23 @@ contract RehideNFT is IRehideNFT, RehideBase {
      * @dev Get addresses that can't read a token
      */
     function getNoteReadDenylist(uint256 tokenId) external view returns (address[] memory addresses) {
-        require(_exists(tokenId), "RehideNFT: Nonexistent token");
+        require(_exists(tokenId), "Token not found");
 
         addresses = _noteReadDenylistAddresses[tokenId];
+    }
+
+    /**
+     * @dev Get how many addresses an address has blacklisted
+     */
+    function getAddressBlacklistForAddressCount(address account) external view returns (uint256 addressCount) {
+        addressCount = _addressBlacklistForAddress[account].length;
+    }
+
+    /**
+    * @dev Get all addresses that an address has blacklisted
+    */
+    function getAddressBlacklistForAddress(address account) external view returns (address[] memory addresses) {
+        addresses = _addressBlacklistForAddress[account];
     }
 
     /**
@@ -592,7 +606,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
     }
 
     function getNoteReads(uint256 tokenId) external view returns (NoteRead[] memory tokenNoteReads) {
-        require(_exists(tokenId), "RehideNFT: Nonexistent token");
+        require(_exists(tokenId), "Token not found");
         tokenNoteReads = _noteReads[tokenId];
     }
 
