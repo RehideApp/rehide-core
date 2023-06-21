@@ -130,7 +130,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
     /**
      * @dev If ETH is transferred directly to contract
      */
-    function withdraw() external onlyOwner returns (uint256) {
+    function withdraw() external nonReentrant onlyOwner returns (uint256) {
         uint256 balance = address(this).balance;
         if(balance > 0){
             Address.sendValue(payable(owner()), balance);
@@ -202,7 +202,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
         return newTokenId;
     }
 
-    function readSharedNote(uint256 tokenId, uint256 platformFee) public payable returns (uint256 readsAvailable) {
+    function readSharedNote(uint256 tokenId, uint256 platformFee) public nonReentrant payable returns (uint256 readsAvailable) {
         require(_exists(tokenId), "Not found");
 
         Note storage note = _notesMapping[tokenId];
@@ -359,7 +359,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
         emit UpdateAllowListOnly(tokenId, allowListOnly);
     }
 
-    function doMintNFT(address recipient, string memory uri) private returns (uint256) {
+    function doMintNFT(address recipient, string memory uri) private nonReentrant returns (uint256) {
         _tokenIds.increment();
 
         uint256 newTokenId = _tokenIds.current();
@@ -371,7 +371,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
         return newTokenId;
     }
 
-    function distributeReferrerRewards(address payable referrer) private {
+    function distributeReferrerRewards(address payable referrer) private nonReentrant {
         uint256 mintFee = msg.value;
         // If there are funds to distribute
         if (mintFee > 0) {
@@ -455,7 +455,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
         emit SetTokenPackage(tokenId, tokenPackage);
     }
 
-    function updateTokenPackage(uint256 tokenId, string memory tokenPackage) public payable {
+    function updateTokenPackage(uint256 tokenId, string memory tokenPackage) public nonReentrant payable {
         require(_exists(tokenId), "Token not found");
         require(ownerOf(tokenId) == _msgSender(), "Unauthorised");
         
