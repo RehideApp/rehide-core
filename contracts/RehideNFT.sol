@@ -281,6 +281,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
 
             address payable payableCreator = payable(note.creator);
             uint256 creatorFee = readFee - platformFee;
+            require(readFee >= creatorFee, "Invalid creator fee");
             _creatorReadFees[payableCreator] += creatorFee;
             _totalCreatorsReadFees += creatorFee;
             (bool creatorTransferSuccess, ) = payableCreator.call{value: creatorFee}("");
