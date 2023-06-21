@@ -86,7 +86,8 @@ contract RehideNFT is IRehideNFT, RehideBase {
      */
     function setTier(uint256 tierId, uint256 rebate) external onlyOwner {
         require(tierId > 0, "Invalid tierId");
-        require(rebate <= _maxReferrerRewardsPercentage, "Referrer rebate exceed max allowed.");
+        require(rebate <= _maxReferrerRewardsPercentage, "Rebate exceeds max");
+        require(rebate > 0, "Invalid tier rebate");
 
         // If new tier (could be updating existing)
         if (_tierRebate[tierId] == 0) {
@@ -103,9 +104,14 @@ contract RehideNFT is IRehideNFT, RehideBase {
     function addToReferrerTierList(address[] calldata toAddAddresses, uint256 tierId) external onlyOwner {
         require(toAddAddresses.length > 0, "Empty");
         require(tierId >= 0, "Invalid tierId");
-        require(_tierRebate[tierId] > 0, "Invalid tier");
+        require(_tierRebate[tierId] > 0, "Invalid tier rebate");
 
         for (uint256 i = 0; i < toAddAddresses.length; i++) {
+
+            if (toAddAddresses[i] == address(0)){
+                continue;
+            }
+
             if (_referrerTierList[toAddAddresses[i]] == 0) {
                 _referrerTierCount.increment();
             }
@@ -118,7 +124,14 @@ contract RehideNFT is IRehideNFT, RehideBase {
      * @dev Remove link between referrer and tier
      */
     function removeFromReferrerTierList(address[] calldata toRemoveAddresses) external onlyOwner {
+        require(toRemoveAddresses.length > 0, "Empty");
+
         for (uint256 i = 0; i < toRemoveAddresses.length; i++) {
+
+            if (toRemoveAddresses[i] == address(0)){
+                continue;
+            }
+
             if (_referrerTierList[toRemoveAddresses[i]] > 0) {
                 _referrerTierList[toRemoveAddresses[i]] = 0;
                 _referrerTierCount.decrement();
@@ -305,8 +318,10 @@ contract RehideNFT is IRehideNFT, RehideBase {
         require(toAddAddresses.length > 0, "Empty");
 
         for (uint256 i = 0; i < toAddAddresses.length; i++) {
-            _noteReadDenylistAddresses[tokenId].push(toAddAddresses[i]); // tokenId => address
-            _notesDeniedForAddress[toAddAddresses[i]].push(tokenId); // address => tokenId
+            if (toAddAddresses[i] != _msgSender()) { // only add if not self
+                _noteReadDenylistAddresses[tokenId].push(toAddAddresses[i]); // tokenId => address
+                _notesDeniedForAddress[toAddAddresses[i]].push(tokenId); // address => tokenId
+            }
         }
         
         emit AddToReadDenylist(tokenId, toAddAddresses);
@@ -330,8 +345,10 @@ contract RehideNFT is IRehideNFT, RehideBase {
         require(toAddAddresses.length > 0, "Empty");
 
         for (uint256 i = 0; i < toAddAddresses.length; i++) {
-            _addressBlacklistForAddress[_msgSender()].push(toAddAddresses[i]); // user => spammer
-            _addressBlacklistReportsCount[toAddAddresses[i]]++;
+            if (toAddAddresses[i] != _msgSender()) { // only add if not self
+                _addressBlacklistForAddress[_msgSender()].push(toAddAddresses[i]); // user => spammer
+                _addressBlacklistReportsCount[toAddAddresses[i]]++;
+            }
         }
         
         emit AddAddressesToBlacklist(_msgSender(), toAddAddresses);
@@ -344,7 +361,9 @@ contract RehideNFT is IRehideNFT, RehideBase {
         require(toAddAddresses.length > 0, "Empty");
 
         for (uint256 i = 0; i < toAddAddresses.length; i++) {
-            _addressBlacklistForPlatform.push(toAddAddresses[i]); // add spammer address
+            if (toAddAddresses[i] != _msgSender()) { // only add if not self
+                _addressBlacklistForPlatform.push(toAddAddresses[i]); // add spammer address
+            }
         }
         
         emit AddAddressesToPlatformBlacklist(toAddAddresses);
