@@ -31,6 +31,7 @@ interface IRehideNFT {
     
     event Pause(uint256 timestamp);
     event Unpause(uint256 timestamp);
+    event TogglePauseErc20(bool isErc20Paused, uint256 timestamp);
     event SetBaseURI(string baseURI);
     event Withdraw(uint256 balance);
     event SetTokenPackage(uint256 indexed tokenId, string tokenPackage);
@@ -45,10 +46,12 @@ interface IRehideNFT {
     event RewardsTransferred(address indexed referrer, uint256 reward);
     event AddToReadAllowlist(uint256 indexed tokenId, address[] toAddAddresses);
     event AddToReadDenylist(uint256 indexed tokenId, address[] toAddAddresses);
-    event SelfAddToReadDenylist(uint256 indexed tokenId, address account);
+    // event SelfAddToReadDenylist(uint256 indexed tokenId, address account);
     event AddAddressesToBlacklist(address reporter, address[] toAddAddresses);
     event AddAddressesToPlatformBlacklist(address[] toAddAddresses);
     event UpdateAllowListOnly(uint256 indexed tokenId, uint256 allowListOnly);
-    event AddToReferrerTierList(address[] toAddAddresses, uint256 tierId);
+    event UpdateReferrerTierList(address[] toAddAddresses, uint256 tierId);
+    event RemoveFromReferrerTierList(address[] toRemoveAddresses, uint256 tierId);
     event SetTier(uint256 indexed tierId, uint256 rebate);
+    event MintPassWithERC20(uint256 indexed newTokenId, uint256 erc20MintPrice, address indexed erc20MintAddress);
 }

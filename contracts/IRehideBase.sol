@@ -9,5 +9,4 @@ interface IRehideBase {
     event SetMaxReferrerLevels(uint256 maxReferrerLevels);
     event SetMaxReferrerRewardsPercentage(uint256 maxReferrerRewardsPercentage);
     event SetReadPlatformPercentage(uint256 readPlatformPercentage);
-    event RemoveFromReferrerTierList(address[] toRemoveAddresses);
 }

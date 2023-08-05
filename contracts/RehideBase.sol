@@ -17,12 +17,6 @@ abstract contract RehideBase is ERC721Enumerable, ERC721URIStorage, Pausable, Re
     using Counters for Counters.Counter;
 
     /**
-     * @dev Payment
-     */
-    address payable public _platformWallet = payable(0x418DeE19Bc3659bd6eFc5f990461320cDfedd91E);
-    uint256 public _readPlatformPercentage = 5;
-
-    /**
      * @dev Referrer Rewards
      */
     mapping(address => address) public _referrers; // referee => referrer
@@ -41,15 +35,6 @@ abstract contract RehideBase is ERC721Enumerable, ERC721URIStorage, Pausable, Re
     mapping(address => uint256) public _creatorReadFees; // total read fees received per address
     uint256 public _totalCreatorsReadFees; // total read fees received by all creators
     uint256 public _totalPlatformReadFees; // total read fees received by platform
-
-    // Counters.Counter public _discountAddressIds;
-    // mapping(address => uint256) public _discountAddressList; // discount % for address
-
-    function setPlatformWallet(address payable platformWallet) external onlyOwner {
-        require(platformWallet != address(0), "RehideNFT: Address cannot be the zero address");
-        _platformWallet = platformWallet;
-        emit SetPlatformWallet(_platformWallet);
-    }
     
     function setPrimaryReferrerPercentage(uint256 primaryReferrerPercentage) external onlyOwner {
         _primaryReferrerPercentage = primaryReferrerPercentage;
@@ -69,11 +54,6 @@ abstract contract RehideBase is ERC721Enumerable, ERC721URIStorage, Pausable, Re
     function setMaxReferrerRewardsPercentage(uint256 maxReferrerRewardsPercentage) external onlyOwner {
         _maxReferrerRewardsPercentage = maxReferrerRewardsPercentage;
         emit SetMaxReferrerRewardsPercentage(_maxReferrerRewardsPercentage);
-    }
-
-    function setReadPlatformPercentage(uint256 readPlatformPercentage) external onlyOwner {
-        _readPlatformPercentage = readPlatformPercentage;
-        emit SetReadPlatformPercentage(_readPlatformPercentage);
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 firstTokenId, uint256 batchSize) internal whenNotPaused override(ERC721, ERC721Enumerable) {
