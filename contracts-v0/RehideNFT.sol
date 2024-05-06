@@ -66,7 +66,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
 
     constructor(string memory name_, string memory symbol_, address platformWallet_, uint256 minEthMintPrice_) ERC721(name_, symbol_) {
         _platformWallet = payable(platformWallet_);
-        _minEthMintPrice = minEthMintPrice_ * 1000000000;
+        _minEthMintPrice = minEthMintPrice_;
     }
 
     function pause() external onlyOwner {
@@ -92,7 +92,12 @@ contract RehideNFT is IRehideNFT, RehideBase {
 
     function setBaseURI(string memory uri) external onlyOwner {
         baseURI = uri;
-        emit SetBaseURI(baseURI);
+        emit BatchMetadataUpdate(1, type(uint256).max);
+    }
+
+    function setTokenURI(uint256 tokenId, string memory tokenURI) internal {
+        _setTokenURI(tokenId, tokenURI);
+        emit MetadataUpdate(tokenId);
     }
 
     /**
@@ -154,8 +159,10 @@ contract RehideNFT is IRehideNFT, RehideBase {
      */
     function withdraw() external nonReentrant onlyOwner returns (uint256) {
         uint256 balance = address(this).balance;
+
         if(balance > 0){
-            Address.sendValue(payable(owner()), balance);
+            (bool sent, ) = payable(owner()).call{value: balance}("");
+            require(sent, "Failed to send Ether");
         }
         emit Withdraw(balance);
         return balance;
@@ -193,7 +200,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
         public payable returns (uint256) {
 
         // Enforce min price to non-owner and less than T3+ addresses (index 2) or already minted 1
-        if ((_msgSender() != owner() && _referrerTierList[_msgSender()] < 2) || _tokenIdsForAddress[_msgSender()].length > 0) { 
+        if (_msgSender() != owner() && (_referrerTierList[_msgSender()] < 2 || _tokenIdsForAddress[_msgSender()].length > 0)) { 
             require(msg.value >= _minEthMintPrice, "Too low");
         }
 
@@ -322,14 +329,14 @@ contract RehideNFT is IRehideNFT, RehideBase {
                 emit ReadSharedNoteRewardsTransferred(_platformWallet, tokenId, platformFee);
             }
 
-            address payable payableCreator = payable(note.creator);
-            uint256 creatorFee = readFee - platformFee;
-            require(readFee >= creatorFee, "X royalty");
-            _creatorReadFees[payableCreator] += creatorFee;
-            _totalCreatorsReadFees += creatorFee;
-            (bool creatorTransferSuccess, ) = payableCreator.call{value: creatorFee}("");
+            address payable payableTokenOwner = payable(ownerOf(tokenId)); 
+            uint256 tokenOwnerFee = readFee - platformFee;
+            require(readFee >= tokenOwnerFee, "X royalty");
+            _creatorReadFees[payableTokenOwner] += tokenOwnerFee;
+            _totalCreatorsReadFees += tokenOwnerFee;
+            (bool creatorTransferSuccess, ) = payableTokenOwner.call{value: tokenOwnerFee}("");
             require(creatorTransferSuccess, "X creator");
-            emit ReadSharedNoteRewardsTransferred(payableCreator, tokenId, creatorFee);
+            emit ReadSharedNoteRewardsTransferred(payableTokenOwner, tokenId, tokenOwnerFee);
         }
     }
 
@@ -426,7 +433,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
 
         uint256 newTokenId = _tokenIds.current();
         _safeMint(recipient, newTokenId);
-        _setTokenURI(newTokenId, uri);
+        setTokenURI(newTokenId, uri);
 
         emit TokenCreated(newTokenId, uri, recipient);
 
@@ -532,8 +539,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
     }
 
     function updateTokenURI(uint256 tokenId, string memory newUri) external onlyOwner {
-        _setTokenURI(tokenId, newUri);
-        emit UpdateTokenUri(tokenId, newUri);
+        setTokenURI(tokenId, newUri);
     }
 
     function burn(uint256 tokenId) external {
@@ -544,8 +550,7 @@ contract RehideNFT is IRehideNFT, RehideBase {
         // setTokenPackage(tokenId, "");
         // delete _notesMapping[tokenId];
 
-        _setTokenURI(tokenId, "");
-        emit UpdateTokenUri(tokenId, "");
+        setTokenURI(tokenId, "");
 
         _burn(tokenId);
         emit Burn(tokenId);

@@ -32,10 +32,10 @@ interface IRehideNFT {
     event Pause(uint256 timestamp);
     event Unpause(uint256 timestamp);
     event TogglePauseErc20(bool isErc20Paused, uint256 timestamp);
-    event SetBaseURI(string baseURI);
+    // event SetBaseURI(string baseURI);
     event Withdraw(uint256 balance);
     event SetTokenPackage(uint256 indexed tokenId, string tokenPackage);
-    event UpdateTokenUri(uint256 indexed tokenId, string uri);
+    // event UpdateTokenUri(uint256 indexed tokenId, string uri);
     event Burn(uint256 indexed tokenId);
     event SetExpireNote(uint256 indexed tokenId);
     event TokenCreated(uint256 indexed tokenId, string tokenURI, address indexed tokenOwner);
@@ -54,4 +54,8 @@ interface IRehideNFT {
     event RemoveFromReferrerTierList(address[] toRemoveAddresses, uint256 tierId);
     event SetTier(uint256 indexed tierId, uint256 rebate);
     event MintPassWithERC20(uint256 indexed newTokenId, uint256 erc20MintPrice, address indexed erc20MintAddress);
+
+    // ERC-4906
+    event MetadataUpdate(uint256 _tokenId);
+    event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
 }
