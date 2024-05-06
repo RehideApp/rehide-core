@@ -1,12 +1,12 @@
 # Rehide
 
+## Dapp
+https://rehide.io/
+
 ## Docs 
 https://docs.rehide.io/
 
-## Testnet
-https://testnet.rehide.io/
-
-## Testnet Launch Press Release: 
+## Rehide Launch Press Release: 
 https://rehide.medium.com/introducing-rehide-a-web3-decentralised-platform-designed-to-keep-your-confidential-information-75a63517127d?source=friends_link&sk=a7f67ed528bf70ca747cc4c6d60aad17
 
 ## Summary
